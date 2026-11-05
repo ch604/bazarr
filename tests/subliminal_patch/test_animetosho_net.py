@@ -4,7 +4,7 @@ import os
 import pytest
 
 from subliminal_patch.core import Episode
-from subliminal_patch.providers.animetosho_xyz import AnimeToshoXYZProvider
+from subliminal_patch.providers.animetosho_net import AnimeToshoNETProvider
 from subzero.language import Language
 
 
@@ -25,7 +25,7 @@ def anime_episodes():
             resolution="1080p",
             video_codec="H.264",
         ),
-        # The VARYG release reported in #3579. AnimeTosho.xyz nests its attachments under the file
+        # The VARYG release reported in #3579. AnimeTosho.net nests its attachments under the file
         # for this one instead of exposing them at the top level of the release.
         "frieren_s02e01": Episode(
             "Frieren.Beyond.Journeys.End.S02E01.Shall.We.Go.Then.1080p.CR.WEB-DL.MULTi.AAC2.0.H.264-VARYG.mkv",
@@ -42,7 +42,7 @@ def anime_episodes():
             video_codec="H.264",
         ),
         # Exact Erai-raws release whose PT-BR attachment URL is reused across other releases on
-        # AnimeTosho.xyz; used to assert release associations stay distinct until scoring.
+        # AnimeTosho.net; used to assert release associations stay distinct until scoring.
         "black_torch_s01e10": Episode(
             "[Erai-raws] Black Torch - 10 [1080p CR WEB-DL AVC AAC][MultiSub][1595FA67].mkv",
             "BLACK TORCH",
@@ -70,7 +70,7 @@ def _top_level_response(*sub_infos):
             {
                 "id": idx,
                 "type": "subtitle",
-                "url": f"https://storage.animetosho.xyz/releases/622245/subtitles/track{idx}.ass.xz",
+                "url": f"https://storage.animetosho.net/releases/622245/subtitles/track{idx}.ass.xz",
                 "info": info,
             }
             for idx, info in enumerate(sub_infos, start=1)
@@ -81,7 +81,7 @@ def _top_level_response(*sub_infos):
 
 def _nested_response(*sub_infos):
     """Release payload nesting its subtitle attachments under its file, which is what
-    AnimeTosho.xyz does for most releases."""
+    AnimeTosho.net does for most releases."""
     return {
         "id": 592301,
         "torrent_name": "Frieren Beyond Journeys End S02E01 Shall We Go Then 1080p CR WEB-DL MULTi "
@@ -96,7 +96,7 @@ def _nested_response(*sub_infos):
                     {
                         "id": idx,
                         "type": "subtitle",
-                        "url": f"https://storage.animetosho.xyz/attachments/0029a/{idx}.xz",
+                        "url": f"https://storage.animetosho.net/attachments/0029a/{idx}.xz",
                         "info": info,
                     }
                     for idx, info in enumerate(sub_infos, start=1)
@@ -110,13 +110,13 @@ def _mock_feed(requests_mock, torrent_response, eid, entry_id, title):
     """Mock the feed endpoint and, when a payload is given, the release detail endpoint. Leave
     torrent_response as None to register the detail endpoint from a recorded file instead."""
     requests_mock.get(
-        f'https://feed.animetosho.xyz/feed/json?eid={eid}',
+        f'https://feed.animetosho.net/feed/json?eid={eid}',
         json=[{"id": entry_id, "timestamp": 1784290258, "status": "complete", "title": title}],
     )
 
     if torrent_response is not None:
         requests_mock.get(
-            f'https://feed.animetosho.xyz/json?show=torrent&id={entry_id}',
+            f'https://feed.animetosho.net/json?show=torrent&id={entry_id}',
             json=torrent_response,
         )
 
@@ -139,24 +139,24 @@ def test_list_subtitles(anime_episodes, requests_mock, data):
     language = Language("eng")
     item = anime_episodes["crowned_s01e08"]
 
-    with open(os.path.join(data, 'animetosho_xyz_episode_response.json'), "rb") as f:
+    with open(os.path.join(data, 'animetosho_net_episode_response.json'), "rb") as f:
         requests_mock.get(
-            'https://feed.animetosho.xyz/feed/json?eid=313249',
+            'https://feed.animetosho.net/feed/json?eid=313249',
             content=f.read()
         )
 
-    with open(os.path.join(data, 'animetosho_xyz_series_response.json'), "rb") as f:
+    with open(os.path.join(data, 'animetosho_net_series_response.json'), "rb") as f:
         response = f.read()
         requests_mock.get(
-            'https://feed.animetosho.xyz/json?show=torrent&id=622245',
+            'https://feed.animetosho.net/json?show=torrent&id=622245',
             content=response
         )
         requests_mock.get(
-            'https://feed.animetosho.xyz/json?show=torrent&id=622243',
+            'https://feed.animetosho.net/json?show=torrent&id=622243',
             content=response
         )
 
-    with AnimeToshoXYZProvider() as provider:
+    with AnimeToshoNETProvider() as provider:
         subtitles = provider.list_subtitles(item, languages={language})
         assert len(subtitles) == 2
         assert all(s.language == language for s in subtitles)
@@ -168,24 +168,24 @@ def test_list_subtitles_with_portuguese_br(anime_episodes, requests_mock, data):
     language = Language("por", "BR")
     item = anime_episodes["crowned_s01e08"]
 
-    with open(os.path.join(data, 'animetosho_xyz_episode_response.json'), "rb") as f:
+    with open(os.path.join(data, 'animetosho_net_episode_response.json'), "rb") as f:
         requests_mock.get(
-            'https://feed.animetosho.xyz/feed/json?eid=313249',
+            'https://feed.animetosho.net/feed/json?eid=313249',
             content=f.read()
         )
 
-    with open(os.path.join(data, 'animetosho_xyz_series_response.json'), "rb") as f:
+    with open(os.path.join(data, 'animetosho_net_series_response.json'), "rb") as f:
         response = f.read()
         requests_mock.get(
-            'https://feed.animetosho.xyz/json?show=torrent&id=622245',
+            'https://feed.animetosho.net/json?show=torrent&id=622245',
             content=response
         )
         requests_mock.get(
-            'https://feed.animetosho.xyz/json?show=torrent&id=622243',
+            'https://feed.animetosho.net/json?show=torrent&id=622243',
             content=response
         )
 
-    with AnimeToshoXYZProvider() as provider:
+    with AnimeToshoNETProvider() as provider:
         subtitles = provider.list_subtitles(item, languages={language})
         assert len(subtitles) == 2
         assert all(s.language == language for s in subtitles)
@@ -204,7 +204,7 @@ def test_list_subtitles_no_anidb_episode_id():
         video_codec="H.264",
     )
 
-    with AnimeToshoXYZProvider() as provider:
+    with AnimeToshoNETProvider() as provider:
         subtitles = provider.list_subtitles(item, languages={Language("eng")})
         assert len(subtitles) == 0
 
@@ -217,24 +217,24 @@ def test_list_subtitles_with_episode_id_tuple(anime_episodes, requests_mock, dat
     item = anime_episodes["crowned_s01e08"]
     item.series_anidb_episode_id = (20151, 313249)
 
-    with open(os.path.join(data, 'animetosho_xyz_episode_response.json'), "rb") as f:
+    with open(os.path.join(data, 'animetosho_net_episode_response.json'), "rb") as f:
         requests_mock.get(
-            'https://feed.animetosho.xyz/feed/json?eid=313249',
+            'https://feed.animetosho.net/feed/json?eid=313249',
             content=f.read()
         )
 
-    with open(os.path.join(data, 'animetosho_xyz_series_response.json'), "rb") as f:
+    with open(os.path.join(data, 'animetosho_net_series_response.json'), "rb") as f:
         response = f.read()
         requests_mock.get(
-            'https://feed.animetosho.xyz/json?show=torrent&id=622245',
+            'https://feed.animetosho.net/json?show=torrent&id=622245',
             content=response
         )
         requests_mock.get(
-            'https://feed.animetosho.xyz/json?show=torrent&id=622243',
+            'https://feed.animetosho.net/json?show=torrent&id=622243',
             content=response
         )
 
-    with AnimeToshoXYZProvider() as provider:
+    with AnimeToshoNETProvider() as provider:
         subtitles = provider.list_subtitles(item, languages={language})
         assert len(subtitles) == 2
 
@@ -265,7 +265,7 @@ def test_forced_flag_is_propagated(anime_episodes, requests_mock, info, expected
         title=_RELEASE_NAME,
     )
 
-    with AnimeToshoXYZProvider() as provider:
+    with AnimeToshoNETProvider() as provider:
         subtitles = provider.list_subtitles(item, languages=_ALL_VARIANTS)
 
         assert len(subtitles) == 1
@@ -279,10 +279,10 @@ def test_nested_attachments_are_found(anime_episodes, requests_mock, data):
     item = anime_episodes["frieren_s02e01"]
 
     _mock_feed(requests_mock, None, eid=306529, entry_id=592301, title=_VARYG_TITLE)
-    with open(os.path.join(data, 'animetosho_xyz_series_nested_attachments_response.json'), "rb") as f:
-        requests_mock.get('https://feed.animetosho.xyz/json?show=torrent&id=592301', content=f.read())
+    with open(os.path.join(data, 'animetosho_net_series_nested_attachments_response.json'), "rb") as f:
+        requests_mock.get('https://feed.animetosho.net/json?show=torrent&id=592301', content=f.read())
 
-    with AnimeToshoXYZProvider() as provider:
+    with AnimeToshoNETProvider() as provider:
         subtitles = provider.list_subtitles(item, languages=_ALL_VARIANTS)
 
     assert {(s.language, s.forced) for s in subtitles} == {
@@ -296,21 +296,21 @@ def test_nested_attachments_are_found(anime_episodes, requests_mock, data):
 
     by_language = {(s.language, s.forced): s for s in subtitles}
     assert by_language[(Language("por"), False)].download_link \
-        == "https://storage.animetosho.xyz/attachments/0029a/81a.xz"
+        == "https://storage.animetosho.net/attachments/0029a/81a.xz"
     assert by_language[(Language("por", forced=True), True)].download_link \
-        == "https://storage.animetosho.xyz/attachments/002a1/975.xz"
+        == "https://storage.animetosho.net/attachments/002a1/975.xz"
 
 
 def test_forced_track_is_not_offered_as_a_normal_subtitle(anime_episodes, requests_mock, data):
-    """#3579 on animetosho.xyz: the forced Portuguese attachment of the VARYG release must not be
+    """#3579 on animetosho.net: the forced Portuguese attachment of the VARYG release must not be
     served to a profile asking for normal Portuguese, and vice versa."""
     item = anime_episodes["frieren_s02e01"]
 
     _mock_feed(requests_mock, None, eid=306529, entry_id=592301, title=_VARYG_TITLE)
-    with open(os.path.join(data, 'animetosho_xyz_series_nested_attachments_response.json'), "rb") as f:
-        requests_mock.get('https://feed.animetosho.xyz/json?show=torrent&id=592301', content=f.read())
+    with open(os.path.join(data, 'animetosho_net_series_nested_attachments_response.json'), "rb") as f:
+        requests_mock.get('https://feed.animetosho.net/json?show=torrent&id=592301', content=f.read())
 
-    with AnimeToshoXYZProvider() as provider:
+    with AnimeToshoNETProvider() as provider:
         normal = provider.list_subtitles(item, languages={Language("por")})
         forced = provider.list_subtitles(item, languages={Language("por", forced=True)})
 
@@ -324,7 +324,7 @@ def test_attachments_are_not_listed_twice(anime_episodes, requests_mock):
     item = anime_episodes["crowned_s01e08"]
 
     info = {"language": "English", "language_code": "eng", "forced": False}
-    url = "https://storage.animetosho.xyz/releases/622245/subtitles/track1.eng.ass.xz"
+    url = "https://storage.animetosho.net/releases/622245/subtitles/track1.eng.ass.xz"
     attachment = {"id": 127399, "type": "subtitle", "url": url, "info": info}
 
     response = {
@@ -344,7 +344,7 @@ def test_attachments_are_not_listed_twice(anime_episodes, requests_mock):
         title=_RELEASE_NAME,
     )
 
-    with AnimeToshoXYZProvider() as provider:
+    with AnimeToshoNETProvider() as provider:
         subtitles = provider.list_subtitles(item, languages={Language("eng")})
 
         assert len(subtitles) == 1
@@ -352,26 +352,26 @@ def test_attachments_are_not_listed_twice(anime_episodes, requests_mock):
 
 
 def test_reused_attachment_across_releases_keeps_distinct_candidates(anime_episodes, requests_mock):
-    # AnimeTosho.xyz may point multiple releases at the same attachment URL. Each release
+    # AnimeTosho.net may point multiple releases at the same attachment URL. Each release
     # association must stay distinct until scoring, otherwise the pool drops later ones by id
     # and the exact local release can be lost (BLACK TORCH S01E10 / Erai-raws 1080p).
     item = anime_episodes["black_torch_s01e10"]
 
-    shared_url = "https://storage.animetosho.xyz/attachments/10002/3f70.xz"
+    shared_url = "https://storage.animetosho.net/attachments/10002/3f70.xz"
     pt_br_info = {"language": "Portuguese[BR]", "language_code": "por", "forced": False}
 
     onalrie_title = "[Onalrie] Black Torch - S01E10 [1080p WEBRip AV1]"
     erai_title = "[Erai-raws] Black Torch - 10 [1080p CR WEB-DL AVC AAC][MultiSub][1595FA67]"
 
     requests_mock.get(
-        'https://feed.animetosho.xyz/feed/json?eid=315278',
+        'https://feed.animetosho.net/feed/json?eid=315278',
         json=[
             {"id": 685592, "timestamp": 200, "status": "complete", "title": onalrie_title},
             {"id": 685550, "timestamp": 100, "status": "complete", "title": erai_title},
         ],
     )
     requests_mock.get(
-        'https://feed.animetosho.xyz/json?show=torrent&id=685592',
+        'https://feed.animetosho.net/json?show=torrent&id=685592',
         json={
             "id": 685592,
             "torrent_name": onalrie_title,
@@ -382,7 +382,7 @@ def test_reused_attachment_across_releases_keeps_distinct_candidates(anime_episo
         },
     )
     requests_mock.get(
-        'https://feed.animetosho.xyz/json?show=torrent&id=685550',
+        'https://feed.animetosho.net/json?show=torrent&id=685550',
         json={
             "id": 685550,
             "torrent_name": erai_title,
@@ -393,7 +393,7 @@ def test_reused_attachment_across_releases_keeps_distinct_candidates(anime_episo
         },
     )
 
-    with AnimeToshoXYZProvider() as provider:
+    with AnimeToshoNETProvider() as provider:
         subtitles = provider.list_subtitles(item, languages={Language("por", "BR")})
 
     assert len(subtitles) == 2
@@ -409,5 +409,5 @@ def test_forced_languages_are_declared():
     # The provider pool intersects the requested languages with the ones declared by the provider
     # before calling list_subtitles, so without the forced variants a profile asking for forced
     # subtitles would never reach AnimeTosho at all.
-    assert Language("eng", forced=True) in AnimeToshoXYZProvider.languages
-    assert Language("por", "BR", forced=True) in AnimeToshoXYZProvider.languages
+    assert Language("eng", forced=True) in AnimeToshoNETProvider.languages
+    assert Language("por", "BR", forced=True) in AnimeToshoNETProvider.languages
